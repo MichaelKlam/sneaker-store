@@ -1,0 +1,169 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ======================
+// Пользователи (для админки и будущих аккаунтов)
+// ======================
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders Order[]
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+// ======================
+// Категории
+// ======================
+model Category {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+
+  // Двуязычные названия
+  nameUk      String
+  nameRu      String
+
+  descriptionUk String?
+  descriptionRu String?
+
+  products  Product[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ======================
+// Товары (кроссовки)
+// ======================
+model Product {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+
+  // Двуязычные поля
+  nameUk      String
+  nameRu      String
+  descriptionUk String?
+  descriptionRu String?
+
+  price       Decimal  @db.Decimal(10, 2)
+  oldPrice    Decimal? @db.Decimal(10, 2) // для скидок
+
+  // Основные характеристики
+  brand       String?
+  colorUk     String?
+  colorRu     String?
+  sizes       String[] // например: ["40", "41", "42", "43"]
+  images      String[] // массив URL фотографий
+
+  stock       Int      @default(0)
+  isActive    Boolean  @default(true)
+  isFeatured  Boolean  @default(false)
+
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+
+  orderItems  OrderItem[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([categoryId])
+  @@index([isActive])
+  @@index([isFeatured])
+}
+
+// ======================
+// Заказы
+// ======================
+model Order {
+  id              String      @id @default(cuid())
+  orderNumber     String      @unique // например: ORD-20260730-XXXX
+
+  // Данные покупателя
+  customerName    String
+  customerEmail   String
+  customerPhone   String
+  customerComment String?
+
+  // Адрес доставки
+  shippingCity    String?
+  shippingAddress String?
+  shippingMethod  String?     // nova_poshta, ukrposhta и т.д.
+
+  // Статус и оплата
+  status          OrderStatus @default(PENDING)
+  paymentStatus   PaymentStatus @default(PENDING)
+  paymentMethod   String?     // wayforpay, liqpay и т.д.
+  paymentId       String?     // ID платежа от платёжки
+
+  // Суммы
+  subtotal        Decimal     @db.Decimal(10, 2)
+  shippingCost    Decimal     @default(0) @db.Decimal(10, 2)
+  total           Decimal     @db.Decimal(10, 2)
+
+  // Связи
+  userId          String?
+  user            User?       @relation(fields: [userId], references: [id])
+  items           OrderItem[]
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([customerEmail])
+}
+
+enum OrderStatus {
+  PENDING         // Ожидает обработки
+  CONFIRMED       // Подтверждён
+  PROCESSING      // В обработке
+  SHIPPED         // Отправлен
+  DELIVERED       // Доставлен
+  CANCELLED       // Отменён
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+// ======================
+// Позиции заказа
+// ======================
+model OrderItem {
+  id          String  @id @default(cuid())
+
+  orderId     String
+  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  productId   String
+  product     Product @relation(fields: [productId], references: [id])
+
+  // Сохраняем название на момент заказа (на случай изменения товара)
+  productName String
+  size        String?
+  quantity    Int
+  price       Decimal @db.Decimal(10, 2) // цена на момент покупки
+
+  @@index([orderId])
+  @@index([productId])
+}
