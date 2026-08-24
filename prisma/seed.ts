@@ -105,10 +105,10 @@ async function main() {
   let productIndex = 1;
 
   for (let i = 0; i < 70; i++) {
-    const brand = brands[i % brands.length];
-    const model = models[i % models.length];
-    const color = colors[i % colors.length];
-    const category = categories[i % categories.length];
+   const brand = brands[i % brands.length]!;
+   const model = models[i % models.length]!;
+   const color = colors[i % colors.length]!;
+   const category = categories[i % categories.length]!;
 
     const basePrice = 2500 + (i % 20) * 350 + Math.floor(Math.random() * 500);
     const hasDiscount = i % 5 === 0;
