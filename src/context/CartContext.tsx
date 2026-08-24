@@ -59,12 +59,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
         if (existingIndex > -1) {
           // Увеличиваем количество, если такой размер уже есть
-          const updated = [...prev];
-          updated[existingIndex] = {
-            ...updated[existingIndex],
-            quantity: updated[existingIndex].quantity + (item.quantity || 1),
-          };
-          return updated;
+    const updated = [...prev];
+  const existingItem = updated[existingIndex];
+  updated[existingIndex] = {
+  ...existingItem,
+  quantity: existingItem.quantity + (item.quantity || 1),
+  };
+  return updated;
         }
 
         // Добавляем новый товар
